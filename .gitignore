@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.png
+*.jpeg
+*.jpg
+*.log
+.DS_Store
+*.local
+test-results/
