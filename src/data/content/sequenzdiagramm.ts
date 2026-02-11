@@ -116,15 +116,16 @@ participant ": Bestellung" as bestellung
 participant ": Rechnung" as rechnung
 
 Kunde -> bestellung : erstelleBestellung()
+activate bestellung
 create rechnung
-bestellung -> rechnung : new Rechnung()
-rechnung --> bestellung : rechnung
-bestellung --> Kunde : bestellung
+bestellung ->> rechnung : <<create>>
+bestellung -->> Kunde : bestellung
+deactivate bestellung
 
 Kunde -> bestellung : stornieren()
 bestellung -> rechnung : löschen()
 destroy rechnung
-bestellung --> Kunde : erfolg
+bestellung -->> Kunde : erfolg
 `,
           alt: 'Sequenzdiagramm mit Lebenslinienverwaltung: Kunde erzeugt Bestellung, Bestellung erzeugt Rechnung-Objekt. Beim Stornieren wird Rechnung zerstört, Lebenslinie endet mit einem X.',
         },
@@ -159,7 +160,7 @@ bestellung --> Kunde : erfolg
           language: 'plantuml',
           code: `A -> B : methode()
 activate B
-B --> A : resultat
+B -->> A : resultat
 deactivate B`,
         },
         {
@@ -173,9 +174,9 @@ Kunde -> shop : sucheProdukt("Laptop")
 activate shop
 shop -> service : findeProdukte("Laptop")
 activate service
-service --> shop : produktListe
+service -->> shop : produktListe
 deactivate service
-shop --> Kunde : produktListe
+shop -->> Kunde : produktListe
 deactivate shop
 `,
           alt: 'Sequenzdiagramm mit Aktivierungsbalken: Kunde sendet sucheProdukt an WebShop, WebShop wird aktiv. WebShop ruft findeProdukte beim ProduktService auf, Service wird aktiv, antwortet und wird deaktiviert. WebShop antwortet an Kunde und wird deaktiviert.',
@@ -230,7 +231,9 @@ participant ": Kunde" as kunde
 participant ": Adresse" as adresse
 
 kunde -> adresse : getStrasse()
-adresse --> kunde : "Musterstraße 42"
+activate adresse
+adresse -->> kunde : "Musterstraße 42"
+deactivate adresse
 `,
               alt: 'Sequenzdiagramm mit synchroner Nachricht: Kunde ruft getStrasse() auf Adresse auf (durchgezogener Pfeil mit gefüllter Spitze), Adresse antwortet mit Straßennamen (gestrichelter Pfeil)',
             },
@@ -266,8 +269,12 @@ adresse --> kunde : "Musterstraße 42"
 participant ": BestellService" as service
 participant ": EmailService" as email
 
+activate service
 service ->> email : sendeBestellbestätigung(kunde, bestellung)
+activate email
 service -> service : weitereVerarbeitung()
+deactivate email
+deactivate service
 `,
               alt: 'Sequenzdiagramm mit asynchroner Nachricht: BestellService sendet sendeBestellbestätigung an EmailService (durchgezogener Pfeil mit offener Spitze), BestellService führt sofort weitereVerarbeitung aus',
             },
@@ -288,7 +295,7 @@ service -> service : weitereVerarbeitung()
                 <ul>
                   <li><strong>Linie:</strong> gestrichelt</li>
                   <li><strong>Pfeilspitze:</strong> offen</li>
-                  <li><strong>PlantUML:</strong> <code>--></code></li>
+                  <li><strong>PlantUML:</strong> <code>-->></code></li>
                 </ul>
                 <h5>Hinweis</h5>
                 <p>
@@ -305,9 +312,13 @@ participant ": Warenkorb" as warenkorb
 participant ": Produkt" as produkt
 
 warenkorb -> produkt : getPreis()
-produkt --> warenkorb : 999.99
+activate produkt
+produkt -->> warenkorb : 999.99
+deactivate produkt
 warenkorb -> produkt : istVerfuegbar()
-produkt --> warenkorb : true
+activate produkt
+produkt -->> warenkorb : true
+deactivate produkt
 `,
               alt: 'Sequenzdiagramm mit Rückantworten: Warenkorb ruft getPreis() auf Produkt auf, Produkt antwortet mit Preis (gestrichelter Pfeil). Warenkorb ruft istVerfuegbar() auf, Produkt antwortet mit true',
             },
@@ -356,11 +367,17 @@ participant ": WebShop" as shop
 participant ": Warenkorb" as warenkorb
 
 Kunde -> shop : zeigeWarenkorb()
+activate shop
 shop -> warenkorb : getAnzahlArtikel()
-warenkorb --> shop : 3
+activate warenkorb
+warenkorb -->> shop : 3
+deactivate warenkorb
 shop -> warenkorb : getGesamtpreis()
-warenkorb --> shop : 2799.97
-shop --> Kunde : warenkorbAnzeige
+activate warenkorb
+warenkorb -->> shop : 2799.97
+deactivate warenkorb
+shop -->> Kunde : warenkorbAnzeige
+deactivate shop
 `,
           alt: 'Sequenzdiagramm mit präzisen Methodenaufrufen: Kunde ruft zeigeWarenkorb() auf, WebShop fragt getAnzahlArtikel() und getGesamtpreis() beim Warenkorb ab, erhält 3 und 2799.97, und zeigt warenkorbAnzeige an',
         },
@@ -423,16 +440,22 @@ participant ": WebShop" as shop
 participant ": Lager" as lager
 
 Kunde -> shop : bestelleProdukt(produktId, menge)
+activate shop
 shop -> lager : pruefeVerfuegbarkeit(produktId, menge)
-lager --> shop : verfuegbar
+activate lager
+lager -->> shop : verfuegbar
+deactivate lager
 
 alt [verfuegbar == true]
     shop -> lager : reserviere(produktId, menge)
-    lager --> shop : erfolg
-    shop --> Kunde : "Bestellung erfolgreich"
+    activate lager
+    lager -->> shop : erfolg
+    deactivate lager
+    shop -->> Kunde : "Bestellung erfolgreich"
 else [verfuegbar == false]
-    shop --> Kunde : "Produkt nicht verfügbar"
+    shop -->> Kunde : "Produkt nicht verfügbar"
 end
+deactivate shop
 `,
               alt: 'Sequenzdiagramm mit alt-Fragment: Nach Verfügbarkeitsprüfung wird entweder reserviert und Erfolg gemeldet (wenn verfügbar), oder Fehlermeldung ausgegeben (wenn nicht verfügbar)',
             },
@@ -467,14 +490,22 @@ participant ": BestellService" as service
 participant ": EmailService" as email
 participant ": RabattService" as rabatt
 
+activate service
 service -> rabatt : pruefeRabatt(kunde)
-rabatt --> service : rabattCode
+activate rabatt
+rabatt -->> service : rabattCode
+deactivate rabatt
 
 opt [rabattCode != null]
     service -> email : sendeRabattEmail(kunde, rabattCode)
+    activate email
+    deactivate email
 end
 
 service -> email : sendeBestellbestätigung(kunde)
+activate email
+deactivate email
+deactivate service
 `,
               alt: 'Sequenzdiagramm mit opt-Fragment: RabattService wird geprüft. Nur wenn ein rabattCode existiert, wird eine RabattEmail gesendet. Bestellbestätigung wird immer gesendet.',
             },
@@ -521,13 +552,17 @@ participant ": ProduktService" as service
 participant ": Lager" as lager
 
 warenkorb -> service : pruefeVerfuegbarkeit()
+activate service
 
 loop [für jedes Produkt im Warenkorb]
     service -> lager : istVerfuegbar(produktId)
-    lager --> service : verfuegbar
+    activate lager
+    lager -->> service : verfuegbar
+    deactivate lager
 end
 
-service --> warenkorb : alleVerfuegbar
+service -->> warenkorb : alleVerfuegbar
+deactivate service
 `,
               alt: 'Sequenzdiagramm mit loop-Fragment: Für jedes Produkt im Warenkorb wird die Verfügbarkeit beim Lager geprüft, am Ende wird Gesamtergebnis zurückgegeben',
             },
@@ -561,10 +596,12 @@ participant ": WebShop" as shop
 participant ": ZahlungsService" as zahlung
 
 Kunde -> shop : kaufeProdukte()
+activate shop
 
 ref over shop, zahlung : Zahlungsprozess
 
-shop --> Kunde : "Bestellung abgeschlossen"
+shop -->> Kunde : "Bestellung abgeschlossen"
+deactivate shop
 `,
               alt: 'Sequenzdiagramm mit ref-Fragment: Nach kaufeProdukte() wird auf separates Sequenzdiagramm "Zahlungsprozess" verwiesen, dann Bestellung abgeschlossen',
             },
@@ -616,13 +653,13 @@ service -> service : validiereBestellung()
 activate service
 service -> service : pruefeAdresse()
 activate service
-service --> service : gueltig
+service -->> service : gueltig
 deactivate service
 service -> service : pruefeBezahldaten()
 activate service
-service --> service : gueltig
+service -->> service : gueltig
 deactivate service
-service --> service : valide
+service -->> service : valide
 deactivate service
 `,
           alt: 'Sequenzdiagramm mit Selbstaufrufen: BestellService ruft validiereBestellung() auf, diese ruft intern pruefeAdresse() und pruefeBezahldaten() auf sich selbst auf, mit verschachtelten Aktivierungsbalken',
@@ -665,7 +702,7 @@ participant ": WebShop" as shop
 participant ": ProduktService" as service
 participant ": ProduktDatenbank" as db
 
-Kunde -> shop : sucheProdukt("Laptop")
+Kunde -[#2e7d32]> shop : sucheProdukt("Laptop")
 `,
       },
       {
@@ -683,7 +720,7 @@ participant ": ProduktDatenbank" as db
 
 Kunde -> shop : sucheProdukt("Laptop")
 activate shop
-shop -> service : findeProdukte("Laptop")
+shop -[#2e7d32]> service : findeProdukte("Laptop")
 activate service
 `,
       },
@@ -703,9 +740,9 @@ Kunde -> shop : sucheProdukt("Laptop")
 activate shop
 shop -> service : findeProdukte("Laptop")
 activate service
-service -> db : query("SELECT * FROM produkte WHERE name LIKE '%Laptop%'")
+service -[#2e7d32]> db : query("SELECT * FROM produkte WHERE name LIKE '%Laptop%'")
 activate db
-db --> service : resultSet
+db -[#2e7d32]->> service : resultSet
 deactivate db
 `,
       },
@@ -728,11 +765,11 @@ shop -> service : findeProdukte("Laptop")
 activate service
 service -> db : query("SELECT * FROM produkte WHERE name LIKE '%Laptop%'")
 activate db
-db --> service : resultSet
+db -->> service : resultSet
 deactivate db
-service -> service : konvertiereErgebnisse(resultSet)
+service -[#2e7d32]> service : konvertiereErgebnisse(resultSet)
 activate service
-service --> service : produktListe
+service -[#2e7d32]->> service : produktListe
 deactivate service
 `,
       },
@@ -754,15 +791,15 @@ shop -> service : findeProdukte("Laptop")
 activate service
 service -> db : query("SELECT * FROM produkte WHERE name LIKE '%Laptop%'")
 activate db
-db --> service : resultSet
+db -->> service : resultSet
 deactivate db
 service -> service : konvertiereErgebnisse(resultSet)
 activate service
-service --> service : produktListe
+service -->> service : produktListe
 deactivate service
-service --> shop : produktListe
+service -[#2e7d32]->> shop : produktListe
 deactivate service
-shop --> Kunde : produktListe
+shop -[#2e7d32]->> Kunde : produktListe
 deactivate shop
 `,
       },
@@ -785,19 +822,19 @@ shop -> service : findeProdukte("Laptop")
 activate service
 service -> db : query("SELECT * FROM produkte WHERE name LIKE '%Laptop%'")
 activate db
-db --> service : resultSet
+db -->> service : resultSet
 deactivate db
 service -> service : konvertiereErgebnisse(resultSet)
 activate service
-service --> service : produktListe
+service -->> service : produktListe
 deactivate service
 
-alt [produktListe.isEmpty() == false]
-    service --> shop : produktListe
-    shop --> Kunde : produktListe
+alt #d4edda [produktListe.isEmpty() == false]
+    service -[#2e7d32]->> shop : produktListe
+    shop -[#2e7d32]->> Kunde : produktListe
 else [produktListe.isEmpty() == true]
-    service --> shop : leere Liste
-    shop --> Kunde : "Keine Produkte gefunden"
+    service -[#2e7d32]->> shop : leere Liste
+    shop -[#2e7d32]->> Kunde : "Keine Produkte gefunden"
 end
 
 deactivate service

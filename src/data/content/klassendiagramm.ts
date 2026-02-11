@@ -768,7 +768,7 @@ A ..> G : Abhängigkeit
   ],
   interactiveExample: {
     title: 'Interaktives Beispiel: TechStore-System schrittweise aufbauen',
-    description: 'In diesem Beispiel bauen wir schrittweise das Klassendiagramm für den TechStore Online-Shop auf. Jeder Schritt fügt neue Klassen und Beziehungen hinzu.',
+    description: 'In diesem Beispiel bauen wir schrittweise das Klassendiagramm für den TechStore Online-Shop auf. Jeder Schritt fügt neue Klassen und Beziehungen hinzu — bereits vorhandene Elemente bleiben bestehen.',
     steps: [
       {
         label: 'Schritt 1: Basisklasse Kunde',
@@ -799,7 +799,7 @@ class Kunde {
   + anmelden(email : String, passwort : String) : boolean
 }
 
-class Bestellung {
+class Bestellung #d4edda {
   - bestellNr : int
   - datum : Date
   - status : String
@@ -807,7 +807,7 @@ class Bestellung {
   + stornieren() : void
 }
 
-Kunde "1" --> "0..*" Bestellung : tätigt >
+Kunde "1" -[#2e7d32]-> "0..*" Bestellung : tätigt >
 @enduml
 `,
         explanation: 'Ein Kunde kann mehrere Bestellungen tätigen (0..*), aber jede Bestellung gehört zu genau einem Kunden (1). Dies ist eine gerichtete Assoziation mit Multiplizitäten.',
@@ -820,7 +820,43 @@ class Kunde {
   - kundenNr : int
   - name : String
   - email : String
+  - registriertSeit : Date
   + registrieren() : void
+  + anmelden(email : String, passwort : String) : boolean
+}
+
+class Bestellung {
+  - bestellNr : int
+  - datum : Date
+  - status : String
+  + berechneGesamtpreis() : double
+  + stornieren() : void
+}
+
+class Bestellposition #d4edda {
+  - positionsNr : int
+  - menge : int
+  - einzelpreis : double
+  + berechneZwischensumme() : double
+}
+
+Kunde "1" --> "0..*" Bestellung : tätigt >
+Bestellung "1" *-[#2e7d32]- "1..*" Bestellposition : besteht aus >
+@enduml
+`,
+        explanation: 'Eine Bestellung besteht aus Bestellpositionen. Dies ist eine Komposition (gefüllte Raute), da Bestellpositionen nicht ohne ihre Bestellung existieren können und exklusiv zu genau einer Bestellung gehören.',
+      },
+      {
+        label: 'Schritt 4: Produkt hinzufügen',
+        diagramCode: `
+@startuml
+class Kunde {
+  - kundenNr : int
+  - name : String
+  - email : String
+  - registriertSeit : Date
+  + registrieren() : void
+  + anmelden(email : String, passwort : String) : boolean
 }
 
 class Bestellung {
@@ -838,21 +874,33 @@ class Bestellposition {
   + berechneZwischensumme() : double
 }
 
+class Produkt #d4edda {
+  - produktId : int
+  - name : String
+  - preis : double
+  - lagerbestand : int
+  + istVerfuegbar() : boolean
+  + reduziereBestand(menge : int) : void
+}
+
 Kunde "1" --> "0..*" Bestellung : tätigt >
 Bestellung "1" *-- "1..*" Bestellposition : besteht aus >
+Bestellposition "*" -[#2e7d32]-> "1" Produkt : verweist auf >
 @enduml
 `,
-        explanation: 'Eine Bestellung besteht aus Bestellpositionen. Dies ist eine Komposition (gefüllte Raute), da Bestellpositionen nicht ohne ihre Bestellung existieren können und exklusiv zu genau einer Bestellung gehören.',
+        explanation: 'Bestellpositionen verweisen auf Produkte. Ein Produkt kann in vielen Bestellpositionen vorkommen (*), aber jede Position verweist auf genau ein Produkt (1). Dies ist eine einfache Assoziation, keine Komposition, da Produkte unabhängig existieren.',
       },
       {
-        label: 'Schritt 4: Produkt hinzufügen',
+        label: 'Schritt 5: Mitarbeiter-Hierarchie mit Vererbung',
         diagramCode: `
 @startuml
 class Kunde {
   - kundenNr : int
   - name : String
   - email : String
+  - registriertSeit : Date
   + registrieren() : void
+  + anmelden(email : String, passwort : String) : boolean
 }
 
 class Bestellung {
@@ -860,6 +908,7 @@ class Bestellung {
   - datum : Date
   - status : String
   + berechneGesamtpreis() : double
+  + stornieren() : void
 }
 
 class Bestellposition {
@@ -878,71 +927,31 @@ class Produkt {
   + reduziereBestand(menge : int) : void
 }
 
-Kunde "1" --> "0..*" Bestellung
-Bestellung "1" *-- "1..*" Bestellposition
-Bestellposition "*" --> "1" Produkt : verweist auf >
-@enduml
-`,
-        explanation: 'Bestellpositionen verweisen auf Produkte. Ein Produkt kann in vielen Bestellpositionen vorkommen (*), aber jede Position verweist auf genau ein Produkt (1). Dies ist eine einfache Assoziation, keine Komposition, da Produkte unabhängig existieren.',
-      },
-      {
-        label: 'Schritt 5: Mitarbeiter-Hierarchie mit Vererbung',
-        diagramCode: `
-@startuml
-class Kunde {
-  - kundenNr : int
-  - name : String
-  - email : String
-  + registrieren() : void
-}
-
-class Bestellung {
-  - bestellNr : int
-  - datum : Date
-  - status : String
-  + berechneGesamtpreis() : double
-}
-
-class Bestellposition {
-  - positionsNr : int
-  - menge : int
-  - einzelpreis : double
-  + berechneZwischensumme() : double
-}
-
-class Produkt {
-  - produktId : int
-  - name : String
-  - preis : double
-  - lagerbestand : int
-  + istVerfuegbar() : boolean
-}
-
-abstract class Mitarbeiter {
+abstract class Mitarbeiter #d4edda {
   # personalNr : int
   # name : String
   # gehalt : double
   + {abstract} berechneGehalt() : double
 }
 
-class Lagerarbeiter {
+class Lagerarbeiter #d4edda {
   - schicht : String
   + berechneGehalt() : double
   + verpackeBestellung(bestellung : Bestellung) : void
 }
 
-class Kundenberater {
+class Kundenberater #d4edda {
   - provision : double
   + berechneGehalt() : double
   + berateKunde(kunde : Kunde) : void
 }
 
-Kunde "1" --> "0..*" Bestellung
-Bestellung "1" *-- "1..*" Bestellposition
-Bestellposition "*" --> "1" Produkt
-Mitarbeiter <|-- Lagerarbeiter
-Mitarbeiter <|-- Kundenberater
-Lagerarbeiter "0..1" --> "0..*" Bestellung : verpackt >
+Kunde "1" --> "0..*" Bestellung : tätigt >
+Bestellung "1" *-- "1..*" Bestellposition : besteht aus >
+Bestellposition "*" --> "1" Produkt : verweist auf >
+Mitarbeiter <|-[#2e7d32]- Lagerarbeiter
+Mitarbeiter <|-[#2e7d32]- Kundenberater
+Lagerarbeiter "0..1" -[#2e7d32]-> "0..*" Bestellung : verpackt >
 @enduml
 `,
         explanation: 'Wir fügen eine Vererbungshierarchie hinzu: Die abstrakte Klasse Mitarbeiter definiert gemeinsame Attribute und eine abstrakte Methode berechneGehalt(). Lagerarbeiter und Kundenberater erben von Mitarbeiter und implementieren die abstrakte Methode. Der Lagerarbeiter kann Bestellungen verpacken (optionale Assoziation).',

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { evaluateGuard, evaluateExpression } from '../../../utils/guard-evaluator.ts'
 import { ExerciseFeedback } from '../../common/ExerciseFeedback.tsx'
@@ -11,6 +11,12 @@ interface HistoryEntry {
   toState: string
   action?: string
   guardInfo?: string
+}
+
+interface Goal {
+  id: string
+  label: string
+  achieved: boolean
 }
 
 interface Props {
@@ -29,6 +35,11 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
     return initial
   })
   const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [goals, setGoals] = useState<Goal[]>([
+    { id: 'goal-kaufen', label: 'Kaufe ein Getränk erfolgreich', achieved: false },
+    { id: 'goal-guard-block', label: 'Erlebe eine Guard-Blockierung', achieved: false },
+    { id: 'goal-wartung', label: 'Löse den Wartungszustand aus', achieved: false },
+  ])
 
   const currentStateObj = exercise.states.find((s) => s.id === currentState)!
   const isFinalState = currentStateObj.isFinal
@@ -40,8 +51,19 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
       .map((t) => t.event)
   )]
 
+  // Check if all goals are achieved
+  const allGoalsAchieved = goals.every((g) => g.achieved)
+
+  // Auto-submit when all goals are achieved
+  useEffect(() => {
+    if (allGoalsAchieved && !result) {
+      handleSubmit()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allGoalsAchieved])
+
   const fireEvent = useCallback((event: string) => {
-    if (result || isFinalState) return
+    if (result) return
 
     // Find matching transitions
     const candidates = exercise.transitions.filter(
@@ -67,6 +89,14 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
       return
     }
 
+    // Check for guard-block goal: self-transition with a guard that acts as a block
+    // (e.g. bezahlen() with guthaben < 2 stays in same state with error action)
+    if (firedTransition.from === firedTransition.to && firedTransition.guard && firedTransition.action) {
+      setGoals((prev) => prev.map((g) =>
+        g.id === 'goal-guard-block' ? { ...g, achieved: true } : g
+      ))
+    }
+
     // Apply variable updates
     const newVars = { ...variables }
     if (firedTransition.variableUpdates) {
@@ -86,33 +116,33 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
     setVariables(newVars)
     setCurrentState(firedTransition.to)
     setHistory((h) => [...h, entry])
-  }, [currentState, variables, exercise.transitions, result, isFinalState])
+
+    // Check goal: reached "ausgabe" state (successful purchase)
+    if (firedTransition.to === 'ausgabe') {
+      setGoals((prev) => prev.map((g) =>
+        g.id === 'goal-kaufen' ? { ...g, achieved: true } : g
+      ))
+    }
+
+    // Check goal: reached "wartung" state
+    if (firedTransition.to === 'wartung') {
+      setGoals((prev) => prev.map((g) =>
+        g.id === 'goal-wartung' ? { ...g, achieved: true } : g
+      ))
+    }
+  }, [currentState, variables, exercise.transitions, result])
 
   const handleSubmit = () => {
     submit(() => {
-      if (!exercise.expectedSequence) {
-        return {
-          correct: !!isFinalState,
-          score: isFinalState ? exercise.maxPoints : Math.round(exercise.maxPoints * 0.5),
-          maxScore: exercise.maxPoints,
-          feedback: isFinalState ? 'Endzustand erreicht!' : 'Der Automat ist noch nicht im Endzustand.',
-        }
-      }
-
-      let correct = 0
-      for (let i = 0; i < exercise.expectedSequence.length; i++) {
-        if (i < history.length && history[i].toState === exercise.expectedSequence[i].expectedState) {
-          correct++
-        }
-      }
-      const score = Math.round((correct / exercise.expectedSequence.length) * exercise.maxPoints)
+      const achievedCount = goals.filter((g) => g.achieved).length
+      const score = achievedCount
       return {
-        correct: correct === exercise.expectedSequence.length,
+        correct: achievedCount === exercise.maxPoints,
         score,
         maxScore: exercise.maxPoints,
-        feedback: correct === exercise.expectedSequence.length
-          ? 'Perfekt! Alle erwarteten Zustandsübergänge korrekt durchlaufen.'
-          : `${correct} von ${exercise.expectedSequence.length} erwarteten Übergängen korrekt.`,
+        feedback: achievedCount === exercise.maxPoints
+          ? 'Perfekt! Alle drei Aufgaben gelöst. Du hast den Kaffeeautomaten in allen Szenarien erprobt.'
+          : `${achievedCount} von ${exercise.maxPoints} Aufgaben gelöst. Setze den Simulator zurück und probiere die fehlenden Szenarien aus.`,
       }
     })
   }
@@ -126,6 +156,11 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
     }
     setVariables(initial)
     setHistory([])
+    setGoals([
+      { id: 'goal-kaufen', label: 'Kaufe ein Getränk erfolgreich', achieved: false },
+      { id: 'goal-guard-block', label: 'Erlebe eine Guard-Blockierung', achieved: false },
+      { id: 'goal-wartung', label: 'Löse den Wartungszustand aus', achieved: false },
+    ])
   }
 
   return (
@@ -135,9 +170,33 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
         <p className="text-text-light">{exercise.description}</p>
       </div>
 
+      {/* Goals checklist */}
+      <div className="bg-surface rounded-lg p-4">
+        <h4 className="text-sm font-semibold text-text mb-3">Aufgaben:</h4>
+        <div className="space-y-2">
+          {goals.map((goal) => (
+            <div key={goal.id} className="flex items-center gap-3">
+              <span
+                className={`flex items-center justify-center w-6 h-6 rounded-full border-2 text-sm font-bold transition-colors ${
+                  goal.achieved
+                    ? 'bg-success border-success text-white'
+                    : 'border-border text-text-light'
+                }`}
+                aria-label={goal.achieved ? 'Erledigt' : 'Offen'}
+              >
+                {goal.achieved ? '\u2713' : ''}
+              </span>
+              <span className={`text-sm ${goal.achieved ? 'text-success font-medium line-through' : 'text-text'}`}>
+                {goal.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* State diagram */}
       <div className="bg-white rounded-lg border border-border p-4 overflow-x-auto">
-        <svg viewBox="0 0 850 500" className="w-full max-w-4xl mx-auto" role="img" aria-label="Interaktiver Zustandsautomat">
+        <svg viewBox="0 0 900 500" className="w-full max-w-4xl mx-auto" role="img" aria-label="Interaktiver Zustandsautomat: Kaffeeautomat">
           {/* Transitions */}
           {exercise.transitions.map((t) => {
             const from = exercise.states.find((s) => s.id === t.from)!
@@ -147,57 +206,112 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
 
             // Self-transition
             if (t.from === t.to) {
-              const cx = from.x
-              const cy = from.y - 50
+              // Check if there are multiple self-transitions on this state
+              const selfTransitions = exercise.transitions.filter(
+                (tr) => tr.from === t.from && tr.to === t.to
+              )
+              const selfIndex = selfTransitions.indexOf(t)
+
+              // Offset each self-transition to avoid overlap
+              const baseAngle = -90 // top of the state
+              const angleOffset = selfIndex * 60 - ((selfTransitions.length - 1) * 30)
+              const angleRad = ((baseAngle + angleOffset) * Math.PI) / 180
+              const cx = from.x + Math.cos(angleRad) * 60
+              const cy = from.y + Math.sin(angleRad) * 60
+
+              const startAngle = angleRad - 0.4
+              const endAngle = angleRad + 0.4
+              const startX = from.x + Math.cos(startAngle) * 50
+              const startY = from.y + Math.sin(startAngle) * 50
+              const endX = from.x + Math.cos(endAngle) * 50
+              const endY = from.y + Math.sin(endAngle) * 50
+
+              const cp1x = from.x + Math.cos(angleRad - 0.2) * 110
+              const cp1y = from.y + Math.sin(angleRad - 0.2) * 110
+              const cp2x = from.x + Math.cos(angleRad + 0.2) * 110
+              const cp2y = from.y + Math.sin(angleRad + 0.2) * 110
+
               return (
                 <g key={t.id} opacity={isFromCurrent ? 1 : 0.3}>
                   <path
-                    d={`M ${from.x - 20} ${from.y - 25} C ${cx - 40} ${cy - 30}, ${cx + 40} ${cy - 30}, ${from.x + 20} ${from.y - 25}`}
+                    d={`M ${startX} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`}
                     fill="none"
                     stroke={canFire ? '#16a34a' : '#94a3b8'}
                     strokeWidth={2}
+                    markerEnd={canFire ? 'url(#arrow-green)' : 'url(#arrow-gray)'}
                   />
-                  <text x={cx} y={cy - 20} textAnchor="middle" fontSize={9} fill={canFire ? '#16a34a' : '#94a3b8'}>
-                    {t.event} {t.guard ?? ''}
+                  <text x={cx} y={cy - 8} textAnchor="middle" fontSize={8} fill={canFire ? '#16a34a' : '#94a3b8'}>
+                    {t.event}
                   </text>
+                  {t.guard && (
+                    <text x={cx} y={cy + 3} textAnchor="middle" fontSize={7} fill={canFire ? '#16a34a' : '#94a3b8'}>
+                      {t.guard}
+                    </text>
+                  )}
                 </g>
               )
             }
+
+            // Check for duplicate transitions between same pair of states
+            const parallelTransitions = exercise.transitions.filter(
+              (tr) => tr.from === t.from && tr.to === t.to && tr.from !== tr.to
+            )
+            const parallelIndex = parallelTransitions.indexOf(t)
+            const hasParallel = parallelTransitions.length > 1
 
             const dx = to.x - from.x
             const dy = to.y - from.y
             const len = Math.sqrt(dx * dx + dy * dy)
             const offset = 55
-            const x1 = from.x + (dx / len) * offset
-            const y1 = from.y + (dy / len) * offset
-            const x2 = to.x - (dx / len) * offset
-            const y2 = to.y - (dy / len) * offset
+
+            // Perpendicular offset for parallel transitions
+            const perpOffset = hasParallel ? (parallelIndex - (parallelTransitions.length - 1) / 2) * 20 : 0
+            const perpX = -(dy / len) * perpOffset
+            const perpY = (dx / len) * perpOffset
+
+            const x1 = from.x + (dx / len) * offset + perpX
+            const y1 = from.y + (dy / len) * offset + perpY
+            const x2 = to.x - (dx / len) * offset + perpX
+            const y2 = to.y - (dy / len) * offset + perpY
 
             const color = canFire ? '#16a34a' : isFromCurrent ? '#dc2626' : '#94a3b8'
 
+            // Use a curved path for parallel transitions
+            const midX = (x1 + x2) / 2 + perpX
+            const midY = (y1 + y2) / 2 + perpY
+
             return (
               <g key={t.id} opacity={isFromCurrent ? 1 : 0.3}>
-                <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth={2} />
+                {hasParallel ? (
+                  <path
+                    d={`M ${x1} ${y1} Q ${midX + perpX} ${midY + perpY}, ${x2} ${y2}`}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={2}
+                  />
+                ) : (
+                  <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth={2} />
+                )}
                 {/* Arrow */}
                 <polygon
                   points={`${x2},${y2} ${x2 - (dx / len) * 10 + (dy / len) * 5},${y2 - (dy / len) * 10 - (dx / len) * 5} ${x2 - (dx / len) * 10 - (dy / len) * 5},${y2 - (dy / len) * 10 + (dx / len) * 5}`}
                   fill={color}
                 />
                 <text
-                  x={(x1 + x2) / 2 + (dy / len) * 12}
-                  y={(y1 + y2) / 2 - (dx / len) * 12}
+                  x={hasParallel ? midX + perpX : (x1 + x2) / 2 + (dy / len) * 12}
+                  y={hasParallel ? midY + perpY - 8 : (y1 + y2) / 2 - (dx / len) * 12}
                   textAnchor="middle"
-                  fontSize={9}
+                  fontSize={8}
                   fill={color}
                 >
                   {t.event} {t.guard ?? ''}
                 </text>
                 {t.action && (
                   <text
-                    x={(x1 + x2) / 2 + (dy / len) * 12}
-                    y={(y1 + y2) / 2 - (dx / len) * 12 + 12}
+                    x={hasParallel ? midX + perpX : (x1 + x2) / 2 + (dy / len) * 12}
+                    y={hasParallel ? midY + perpY + 4 : (y1 + y2) / 2 - (dx / len) * 12 + 12}
                     textAnchor="middle"
-                    fontSize={8}
+                    fontSize={7}
                     fill="#64748b"
                   >
                     / {t.action}
@@ -211,15 +325,16 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
           {exercise.states.map((state) => {
             const isCurrent = state.id === currentState
             const hasActions = state.entryAction || state.doAction || state.exitAction
-            const height = hasActions ? 70 : 50
+            const actionCount = [state.entryAction, state.doAction, state.exitAction].filter(Boolean).length
+            const height = hasActions ? 50 + actionCount * 12 : 50
 
             return (
               <g key={state.id}>
                 {isCurrent && (
                   <motion.rect
-                    x={state.x - 55}
+                    x={state.x - 60}
                     y={state.y - height / 2 - 5}
-                    width={110}
+                    width={120}
                     height={height + 10}
                     rx={18}
                     fill="none"
@@ -230,9 +345,9 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
                   />
                 )}
                 <rect
-                  x={state.x - 50}
+                  x={state.x - 55}
                   y={state.y - height / 2}
-                  width={100}
+                  width={110}
                   height={height}
                   rx={15}
                   fill={isCurrent ? '#dbeafe' : state.isFinal ? '#f0fdf4' : 'white'}
@@ -251,20 +366,20 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
                 </text>
                 {hasActions && (
                   <>
-                    <line x1={state.x - 48} y1={state.y} x2={state.x + 48} y2={state.y} stroke="#e2e8f0" strokeWidth={1} />
+                    <line x1={state.x - 53} y1={state.y} x2={state.x + 53} y2={state.y} stroke="#e2e8f0" strokeWidth={1} />
                     {state.entryAction && (
-                      <text x={state.x - 45} y={state.y + 14} fontSize={8} fill="#64748b">entry / {state.entryAction}</text>
+                      <text x={state.x - 48} y={state.y + 14} fontSize={7} fill="#64748b">entry / {state.entryAction}</text>
                     )}
                     {state.doAction && (
-                      <text x={state.x - 45} y={state.y + 24} fontSize={8} fill="#64748b">do / {state.doAction}</text>
+                      <text x={state.x - 48} y={state.y + 14 + (state.entryAction ? 11 : 0)} fontSize={7} fill="#64748b">do / {state.doAction}</text>
                     )}
                   </>
                 )}
                 {/* Initial state indicator */}
                 {state.isInitial && (
                   <>
-                    <circle cx={state.x - 80} cy={state.y} r={8} fill="#1e293b" />
-                    <line x1={state.x - 72} y1={state.y} x2={state.x - 52} y2={state.y} stroke="#1e293b" strokeWidth={2} />
+                    <circle cx={state.x - 85} cy={state.y} r={8} fill="#1e293b" />
+                    <line x1={state.x - 77} y1={state.y} x2={state.x - 57} y2={state.y} stroke="#1e293b" strokeWidth={2} />
                   </>
                 )}
               </g>
@@ -279,8 +394,11 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
         <div className="bg-surface rounded-lg p-4">
           <h4 className="text-sm font-semibold text-text mb-3">Variablen:</h4>
           {exercise.variables.map((v) => (
-            <div key={v.name} className="flex items-center justify-between mb-2">
-              <span className="text-sm font-mono text-text">{v.name}</span>
+            <div key={v.name} className="mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-mono text-text">{v.name}</span>
+                <span className="text-lg font-bold text-primary">{variables[v.name] as number}</span>
+              </div>
               {v.type === 'boolean' ? (
                 <button
                   onClick={() => setVariables((prev) => ({ ...prev, [v.name]: !prev[v.name] }))}
@@ -292,7 +410,52 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
                   {String(variables[v.name])}
                 </button>
               ) : (
-                <span className="text-lg font-bold text-primary">{variables[v.name] as number}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setVariables((prev) => ({
+                        ...prev,
+                        [v.name]: Math.max(v.min ?? 0, (prev[v.name] as number) - 1),
+                      }))
+                    }
+                    disabled={!!result || (variables[v.name] as number) <= (v.min ?? 0)}
+                    className="w-8 h-8 flex items-center justify-center rounded bg-surface-dark text-text font-bold text-lg hover:bg-border disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                    aria-label={`${v.name} verringern`}
+                  >
+                    -
+                  </button>
+                  <input
+                    type="range"
+                    min={v.min ?? 0}
+                    max={v.max ?? 100}
+                    value={variables[v.name] as number}
+                    onChange={(e) =>
+                      setVariables((prev) => ({
+                        ...prev,
+                        [v.name]: parseInt(e.target.value, 10),
+                      }))
+                    }
+                    disabled={!!result}
+                    className="flex-1 h-2 accent-primary disabled:opacity-50"
+                    aria-label={`${v.name} Wert`}
+                  />
+                  <button
+                    onClick={() =>
+                      setVariables((prev) => ({
+                        ...prev,
+                        [v.name]: Math.min(v.max ?? 100, (prev[v.name] as number) + 1),
+                      }))
+                    }
+                    disabled={!!result || (variables[v.name] as number) >= (v.max ?? 100)}
+                    className="w-8 h-8 flex items-center justify-center rounded bg-surface-dark text-text font-bold text-lg hover:bg-border disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                    aria-label={`${v.name} erhöhen`}
+                  >
+                    +
+                  </button>
+                  <span className="text-xs text-text-light w-16 text-right">
+                    ({v.min ?? 0}–{v.max ?? 100})
+                  </span>
+                </div>
               )}
             </div>
           ))}
@@ -314,7 +477,7 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
                 <button
                   key={event}
                   onClick={() => fireEvent(event)}
-                  disabled={!!result || isFinalState}
+                  disabled={!!result || !!isFinalState}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                     canFire
                       ? 'bg-primary text-white hover:bg-primary-dark'
@@ -344,7 +507,7 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
                 <span className="text-text">{entry.event}</span>
                 <span className="text-text-light">:</span>
                 <span className="font-medium text-primary">{entry.fromState}</span>
-                <span className="text-text-light">→</span>
+                <span className="text-text-light">{'\u2192'}</span>
                 <span className="font-medium text-primary">{entry.toState}</span>
                 {entry.action && <span className="text-text-light text-xs">/ {entry.action}</span>}
                 {entry.guardInfo?.includes('blockiert') && (
@@ -360,7 +523,7 @@ export function ZustandsautomatSimulator({ exercise, onNext }: Props) {
         <div className="flex gap-3">
           <button
             onClick={handleSubmit}
-            disabled={history.length === 0 && !isFinalState}
+            disabled={history.length === 0}
             className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
             Auswerten

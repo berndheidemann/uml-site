@@ -417,29 +417,14 @@ Ausgelistet --> [*]
     `,
     steps: [
       {
-        label: 'Anfangszustand und erster Zustand',
+        label: 'Schritt 1: Anfangszustand und Transition',
         diagramCode: `
 @startuml
-[*] --> Erstellt
-@enduml
-        `,
-        explanation: `
-          Wir beginnen mit dem Anfangszustand (schwarzer Kreis) und dem ersten Zustand "Erstellt".
-          Eine Bestellung wird erstellt, sobald ein Kunde den Checkout-Prozess abschließt.
-        `,
-      },
-      {
-        label: 'Bezahlvorgang hinzufügen',
-        diagramCode: `
-@startuml
-[*] --> Erstellt
+[*] --> Erstellt : Kunde legt Bestellung an
 
-state "Erstellt" as Erstellt {
-  Erstellt : entry / bestellnummer_generieren
-  Erstellt : entry / kunde_informieren
-}
+state "Erstellt" as Erstellt
 
-Erstellt --> Bezahlt : zahlung_erfolgt / rechnung_erstellen
+Erstellt --> Bezahlt : zahlung_erfolgt
 Erstellt --> Storniert : kunde_storniert
 
 Bezahlt --> [*]
@@ -447,27 +432,22 @@ Storniert --> [*]
 @enduml
         `,
         explanation: `
-          Der Zustand "Erstellt" erhält Entry-Aktionen: Bestellnummer generieren und Kunde informieren.
-          Von hier aus kann die Bestellung entweder bezahlt werden (mit Aktion "rechnung_erstellen")
-          oder vom Kunden storniert werden. Beide führen zu einem Endzustand.
+          Wir beginnen mit den Grundelementen: Der <strong>Anfangszustand</strong> (schwarzer Kreis) markiert den Start.
+          Von "Erstellt" gibt es zwei Transitionen — zur Bezahlung oder zur Stornierung.
+          Beide Zielzustände führen zum <strong>Endzustand</strong> (Bullauge).
         `,
       },
       {
-        label: 'Versandprozess ergänzen',
+        label: 'Schritt 2: Entry/Do/Exit-Aktionen',
         diagramCode: `
 @startuml
-[*] --> Erstellt
+[*] --> Erstellt : Kunde legt Bestellung an
 
 state "Erstellt" as Erstellt {
   Erstellt : entry / bestellnummer_generieren
-  Erstellt : entry / kunde_informieren
 }
 
-state "Bezahlt" as Bezahlt {
-  Bezahlt : entry / zahlung_bestaetigen
-}
-
-state "InBearbeitung" as InBearbeitung {
+state "InBearbeitung" as InBearbeitung #d4edda {
   InBearbeitung : entry / kommissionierung_starten
   InBearbeitung : do / artikel_zusammenstellen
   InBearbeitung : exit / paket_vorbereiten
@@ -476,32 +456,28 @@ state "InBearbeitung" as InBearbeitung {
 Erstellt --> Bezahlt : zahlung_erfolgt / rechnung_erstellen
 Erstellt --> Storniert : kunde_storniert
 
-Bezahlt --> InBearbeitung : kommissionierung_starten
-InBearbeitung --> Versendet : versand_beauftragt / tracking_generieren
+Bezahlt -[#2e7d32]-> InBearbeitung : bearbeitung_starten
+InBearbeitung -[#2e7d32]-> Versendet : versand_beauftragt / tracking_generieren
 
 Versendet --> [*]
 Storniert --> [*]
 @enduml
         `,
         explanation: `
-          Nach der Bezahlung geht die Bestellung in Bearbeitung. Hier sehen wir alle drei Aktionstypen:
-          Entry (Kommissionierung starten), Do (Artikel zusammenstellen), Exit (Paket vorbereiten).
-          Anschließend wird die Bestellung versendet mit der Aktion "tracking_generieren".
+          Zustände können interne Aktionen enthalten:
+          <strong>entry</strong> (beim Betreten), <strong>do</strong> (während des Verweilens),
+          <strong>exit</strong> (beim Verlassen). Der Zustand "InBearbeitung" nutzt alle drei Typen.
+          Transitionen können ebenfalls Aktionen haben (z.B. "/ rechnung_erstellen").
         `,
       },
       {
-        label: 'Zustellung und Retoure',
+        label: 'Schritt 3: Guards (Bedingungen)',
         diagramCode: `
 @startuml
-[*] --> Erstellt
+[*] --> Erstellt : Kunde legt Bestellung an
 
 state "Erstellt" as Erstellt {
   Erstellt : entry / bestellnummer_generieren
-  Erstellt : entry / kunde_informieren
-}
-
-state "Bezahlt" as Bezahlt {
-  Bezahlt : entry / zahlung_bestaetigen
 }
 
 state "InBearbeitung" as InBearbeitung {
@@ -510,41 +486,37 @@ state "InBearbeitung" as InBearbeitung {
   InBearbeitung : exit / paket_vorbereiten
 }
 
-state "Versendet" as Versendet {
-  Versendet : entry / tracking_aktivieren
-  Versendet : do / lieferstatus_aktualisieren
-}
-
-Erstellt --> Bezahlt : zahlung_erfolgt / rechnung_erstellen
+Erstellt -[#2e7d32]-> Bezahlt : zahlung_erfolgt [betrag == rechnungsbetrag] / rechnung_erstellen
 Erstellt --> Storniert : kunde_storniert
 
-Bezahlt --> InBearbeitung : kommissionierung_starten
+Bezahlt -[#2e7d32]-> InBearbeitung : bearbeitung_starten [artikel_verfuegbar]
+Bezahlt -[#2e7d32]-> Storniert : artikel_nicht_verfuegbar / rueckerstattung_einleiten
+
 InBearbeitung --> Versendet : versand_beauftragt / tracking_generieren
 
-Versendet --> Zugestellt : zustellung_bestaetigt / kunde_benachrichtigen
-Versendet --> InRuecksendung : retoure_angemeldet
-
+Versendet --> Zugestellt : zustellung_bestaetigt
 Zugestellt --> [*]
 Storniert --> [*]
 @enduml
         `,
         explanation: `
-          Der Zustand "Versendet" erhält ebenfalls Entry- und Do-Aktionen für das Tracking.
-          Von hier aus kann die Bestellung entweder zugestellt werden oder in die Rücksendung gehen.
+          <strong>Guards</strong> sind Bedingungen in eckigen Klammern, die erfüllt sein müssen,
+          damit eine Transition feuert. Beispiel: <code>[betrag == rechnungsbetrag]</code> bei der Zahlung — der gezahlte Betrag muss exakt dem Rechnungsbetrag entsprechen.
+          Vom selben Zustand "Bezahlt" führen zwei Transitionen mit unterschiedlichen Bedingungen
+          zu verschiedenen Zielzuständen — je nachdem, ob der Artikel verfügbar ist oder nicht.
         `,
       },
       {
-        label: 'Guards und vollständiger Prozess',
+        label: 'Schritt 4: Vollständiger Prozess',
         diagramCode: `
 @startuml
-[*] --> Erstellt
+[*] --> Erstellt : Kunde legt Bestellung an
 
 state "Erstellt" as Erstellt {
   Erstellt : entry / bestellnummer_generieren
-  Erstellt : entry / kunde_informieren
 }
 
-state "Bezahlt" as Bezahlt {
+state "Bezahlt" as Bezahlt #d4edda {
   Bezahlt : entry / zahlung_bestaetigen
 }
 
@@ -554,42 +526,30 @@ state "InBearbeitung" as InBearbeitung {
   InBearbeitung : exit / paket_vorbereiten
 }
 
-state "Versendet" as Versendet {
+state "Versendet" as Versendet #d4edda {
   Versendet : entry / tracking_aktivieren
   Versendet : do / lieferstatus_aktualisieren
 }
 
-state "InRuecksendung" as InRuecksendung {
-  InRuecksendung : entry / retourenlabel_erstellen
-  InRuecksendung : do / ruecksendung_verfolgen
-}
+Erstellt --> Bezahlt : zahlung_erfolgt [betrag == rechnungsbetrag] / rechnung_erstellen
+Erstellt --> Storniert : kunde_storniert
 
-Erstellt --> Bezahlt : zahlung_erfolgt [betrag > 0] / rechnung_erstellen
-Erstellt --> Storniert : kunde_storniert [innerhalb_24h] / anzahlung_erstatten
-Erstellt --> Storniert : zahlungsfrist_abgelaufen
-
-Bezahlt --> InBearbeitung : kommissionierung_starten [artikel_verfuegbar]
+Bezahlt --> InBearbeitung : bearbeitung_starten [artikel_verfuegbar]
 Bezahlt --> Storniert : artikel_nicht_verfuegbar / rueckerstattung_einleiten
 
 InBearbeitung --> Versendet : versand_beauftragt / tracking_generieren
-Versendet --> Zugestellt : zustellung_bestaetigt / kunde_benachrichtigen
-Versendet --> InRuecksendung : retoure_angemeldet [innerhalb_14_tage]
 
-InRuecksendung --> Erstattet : ware_geprueft [zustand_ok] / betrag_erstatten
-InRuecksendung --> Abgelehnt : ware_geprueft [zustand_mangelhaft] / ablehnung_begruenden
+Versendet -[#2e7d32]-> Zugestellt : zustellung_bestaetigt / kunde_benachrichtigen
 
 Zugestellt --> [*]
 Storniert --> [*]
-Erstattet --> [*]
-Abgelehnt --> [*]
 @enduml
         `,
         explanation: `
-          Im finalen Diagramm sehen wir Guards in Aktion: Die Zahlung muss einen Betrag > 0 haben,
-          Stornierungen sind nur innerhalb von 24h möglich, Retouren nur innerhalb von 14 Tagen.
-          Der Rücksendeprozess prüft den Warenzustand und führt entweder zur Erstattung oder Ablehnung.
-          Damit haben wir einen vollständigen, realitätsnahen Bestellprozess modelliert, der alle
-          wichtigen Konzepte von Zustandsdiagrammen nutzt.
+          Im vollständigen Diagramm hat jeder Zustand passende Entry- und Do-Aktionen.
+          "Bezahlt" bestätigt die Zahlung beim Betreten, "Versendet" aktiviert das Tracking
+          und aktualisiert den Lieferstatus kontinuierlich. Alle Konzepte — Anfangs-/Endzustand,
+          Transitionen mit Ereignis/Guard/Aktion, und Entry/Do/Exit — arbeiten zusammen.
         `,
       },
     ],

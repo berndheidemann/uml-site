@@ -483,7 +483,7 @@ stop
         diagramCode: `@startuml
 start
 :Kunde meldet Retoure an;
-:Retourengrund erfassen;
+#d4edda:Retourengrund erfassen;
 stop
 @enduml`,
         explanation: 'Der Kunde gibt den Grund für die Retoure an (z.B. defekt, nicht wie beschrieben, Fehlkauf).',
@@ -495,10 +495,10 @@ start
 :Kunde meldet Retoure an;
 :Retourengrund erfassen;
 if () then ([Retoure innerhalb 14 Tage])
-  :Retourenlabel erstellen;
+  #d4edda:Retourenlabel erstellen;
 else ([Retoure nach 14 Tagen])
-  :Retoure ablehnen;
-  :Kunde informieren;
+  #d4edda:Retoure ablehnen;
+  #d4edda:Kunde informieren;
 endif
 stop
 @enduml`,
@@ -514,16 +514,16 @@ start
 |Webshop-System|
 if () then ([Retoure innerhalb 14 Tage])
   |Kunde|
-  :Retourenlabel herunterladen;
-  :Ware verpacken;
-  :Paket versenden;
+  #d4edda:Retourenlabel herunterladen;
+  #d4edda:Ware verpacken;
+  #d4edda:Paket versenden;
   |Lager|
-  :Retoure empfangen;
+  #d4edda:Retoure empfangen;
 else ([Retoure nach 14 Tagen])
   |Webshop-System|
   :Retoure ablehnen;
   |Kunde|
-  :Ablehnungsbenachrichtigung erhalten;
+  #d4edda:Ablehnungsbenachrichtigung erhalten;
 endif
 stop
 @enduml`,
@@ -544,11 +544,11 @@ if () then ([Retoure innerhalb 14 Tage])
   :Paket versenden;
   |Lager|
   :Retoure empfangen;
-  :Warenzustand prüfen;
+  #d4edda:Warenzustand prüfen;
   if () then ([Ware unbeschädigt])
-    :Ware ins Lager einbuchen;
+    #d4edda:Ware ins Lager einbuchen;
   else ([Ware beschädigt])
-    :Ware als Defekt kennzeichnen;
+    #d4edda:Ware als Defekt kennzeichnen;
   endif
 else ([Retoure nach 14 Tagen])
   |Webshop-System|
@@ -580,19 +580,19 @@ if () then ([Retoure innerhalb 14 Tage])
     :Ware ins Lager einbuchen;
     fork
       |Buchhaltung|
-      :Erstattungsbetrag berechnen;
-      :Geld zurückerstatten;
+      #d4edda:Erstattungsbetrag berechnen;
+      #d4edda:Geld zurückerstatten;
     fork again
       |Webshop-System|
-      :Bestellung als retourniert markieren;
+      #d4edda:Bestellung als retourniert markieren;
     end fork
     |Kunde|
-    :Erstattungsbestätigung erhalten;
+    #d4edda:Erstattungsbestätigung erhalten;
   else ([Ware beschädigt])
     |Lager|
     :Ware als Defekt kennzeichnen;
     |Kunde|
-    :Hinweis auf Beschädigung;
+    #d4edda:Hinweis auf Beschädigung;
   endif
 else ([Retoure nach 14 Tagen])
   |Webshop-System|

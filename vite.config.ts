@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: '/uml_site_v3/',
+  base: '/uml-site/',
   plugins: [react(), tailwindcss()],
   test: {
     globals: true,

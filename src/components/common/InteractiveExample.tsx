@@ -53,31 +53,36 @@ export function InteractiveExample({ title, description, steps }: Props) {
         ))}
       </div>
 
-      {/* Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            <UmlDiagram
-              code={step.diagramCode}
-              alt={`Schritt ${currentStep + 1}: ${step.label}`}
-              className="bg-white rounded-lg p-4 border border-border"
-            />
-          </motion.div>
-        </AnimatePresence>
-
-        <div>
-          <h3 className="text-lg font-semibold text-text mb-2">{step.label}</h3>
-          <div
-            className="text-text-light leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: step.explanation }}
+      {/* Diagram – full width */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          <UmlDiagram
+            code={step.diagramCode}
+            alt={`Schritt ${currentStep + 1}: ${step.label}`}
+            className="bg-white rounded-lg p-4 border border-border"
           />
-        </div>
+          {currentStep > 0 && (
+            <div className="flex items-center gap-2 text-xs text-text-light mt-2 px-1">
+              <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: '#d4edda', border: '1px solid #2e7d32' }} />
+              <span>Neu in diesem Schritt</span>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Explanation */}
+      <div className="mt-4 bg-surface rounded-lg p-4 border border-border">
+        <h3 className="text-lg font-semibold text-text mb-2">{step.label}</h3>
+        <div
+          className="text-text-light leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: step.explanation }}
+        />
       </div>
 
       {/* Navigation */}

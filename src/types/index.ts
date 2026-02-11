@@ -83,6 +83,7 @@ export interface DragDropConnectorExercise extends ExerciseBase {
   positions: ConnectorPosition[]
   correctMapping: Record<string, string> // itemId -> positionId
   diagramCode?: string // PlantUML code for background diagram
+  svgContent?: string // Inline SVG content for background diagram
 }
 
 // === Multiple Choice & Decision ===

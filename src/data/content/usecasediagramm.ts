@@ -76,10 +76,10 @@ rectangle "TechStore-System" {
   usecase "Lager verwalten" as UC2
 }
 
-Kunde --> UC1
-Admin --> UC2
-UC1 --> Zahlungssystem
-UC2 --> Lieferant
+Kunde -- UC1
+Admin -- UC2
+UC1 -- Zahlungssystem
+UC2 -- Lieferant
 `,
           alt: 'Use-Case-Diagramm mit primären Akteuren links (Kunde, Admin) und sekundären Akteuren rechts (Zahlungssystem, Lieferant)',
         },
@@ -123,9 +123,9 @@ rectangle "TechStore-System" {
   usecase "Retoure anmelden" as UC3
 }
 
-Kunde --> UC1
-Kunde --> UC2
-Kunde --> UC3
+Kunde -- UC1
+Kunde -- UC2
+Kunde -- UC3
 `,
           alt: 'Use-Case-Diagramm mit drei Anwendungsfällen: Produkt suchen, Produkt bestellen, Retoure anmelden',
         },
@@ -166,9 +166,9 @@ rectangle "TechStore-System" {
   usecase "Bezahlvorgang starten" as UC2
 }
 
-Kunde --> UC1
-Kunde --> UC2
-UC2 --> Zahlungssystem
+Kunde -- UC1
+Kunde -- UC2
+UC2 -- Zahlungssystem
 `,
           alt: 'Use-Case-Diagramm mit Systemgrenze, die zwei Use Cases umschließt. Akteure stehen außerhalb.',
         },
@@ -187,16 +187,8 @@ UC2 --> Zahlungssystem
               und Use Cases. Sie zeigen, dass ein Akteur an einem Anwendungsfall beteiligt ist.
             </p>
             <p>
-              <strong>Richtung:</strong><br>
-              Eine Assoziation kann ungerichtet (ohne Pfeil) oder gerichtet sein:
-            </p>
-            <ul>
-              <li><strong>Ungerichtet:</strong> Der Akteur kommuniziert mit dem Use Case (üblich).</li>
-              <li><strong>Gerichtet:</strong> Zeigt die Initiierungsrichtung (Akteur initiiert Use Case).</li>
-            </ul>
-            <p>
-              In der Praxis werden meist ungerichtete Assoziationen verwendet, da die Richtung implizit klar ist
-              (Akteure nutzen Use Cases).
+              Assoziationen zwischen Akteuren und Use Cases werden als <strong>einfache Linien ohne Pfeilspitze</strong> dargestellt.
+              Die Linie zeigt lediglich, dass der Akteur an dem Anwendungsfall beteiligt ist.
             </p>
           `,
         },
@@ -212,9 +204,9 @@ rectangle "TechStore-System" {
   usecase "Bestellung stornieren" as UC2
 }
 
-Kunde --> UC1
-Kunde --> UC2
-Admin --> UC2
+Kunde -- UC1
+Kunde -- UC2
+Admin -- UC2
 `,
           alt: 'Use-Case-Diagramm mit Assoziationen zwischen Akteuren und Use Cases',
         },
@@ -269,7 +261,7 @@ rectangle "TechStore-System" {
   UC1 ..> UC2 : <<include>>
 }
 
-Kunde --> UC1
+Kunde -- UC1
 `,
           alt: 'Use-Case-Diagramm mit Include-Beziehung: Produkt bestellen inkludiert Anmelden (Pfeil von Basis zu Inkludiert)',
         },
@@ -337,7 +329,7 @@ rectangle "TechStore-System" {
   UC2 ..> UC1 : <<extend>>\\n[Gutscheincode vorhanden]
 }
 
-Kunde --> UC1
+Kunde -- UC1
 `,
           alt: 'Use-Case-Diagramm mit Extend-Beziehung: Rabatt anwenden erweitert Produkt bestellen (Pfeil von Erweiterung zu Basis, mit Condition und Extension Point)',
         },
@@ -383,9 +375,9 @@ rectangle "TechStore-System" {
   usecase "Nutzer verwalten" as UC3
 }
 
-Benutzer --> UC1
-Mitarbeiter --> UC2
-Admin --> UC3
+Benutzer -- UC1
+Mitarbeiter -- UC2
+Admin -- UC3
 `,
           alt: 'Use-Case-Diagramm mit Vererbung zwischen Akteuren: Admin und Mitarbeiter erben von Benutzer',
         },
@@ -438,7 +430,7 @@ rectangle "TechStore-System" {
   UC3 -up-|> UC1
 }
 
-Kunde --> UC1
+Kunde -- UC1
 `,
           alt: 'Use-Case-Diagramm mit Vererbung zwischen Use Cases: Online bezahlen und Per Rechnung bezahlen erben von Bezahlung durchführen',
         },
@@ -543,7 +535,7 @@ rectangle "TechStore-System" {
   usecase "Produkt bestellen" as UC1
 }
 
-Kunde --> UC1
+Kunde -- UC1
 `,
         explanation: `
           Wir beginnen mit dem Hauptakteur <strong>Kunde</strong> und dem zentralen Use Case
@@ -559,12 +551,12 @@ actor Kunde
 
 rectangle "TechStore-System" {
   usecase "Produkt bestellen" as UC1
-  usecase "Anmelden" as UC2
+  usecase "Anmelden" as UC2 #d4edda
 
-  UC1 ..> UC2 : <<include>>
+  UC1 .[#2e7d32].> UC2 : <<include>>
 }
 
-Kunde --> UC1
+Kunde -- UC1
 `,
         explanation: `
           <strong>Include:</strong> Um ein Produkt zu bestellen, muss der Kunde sich <strong>immer</strong>
@@ -581,13 +573,13 @@ actor Kunde
 rectangle "TechStore-System" {
   usecase "Produkt bestellen\\n--\\nextension points\\nRabatt prüfen" as UC1
   usecase "Anmelden" as UC2
-  usecase "Rabatt anwenden" as UC3
+  usecase "Rabatt anwenden" as UC3 #d4edda
 
   UC1 ..> UC2 : <<include>>
-  UC3 ..> UC1 : <<extend>>\\n[Gutscheincode vorhanden]
+  UC3 .[#2e7d32].> UC1 : <<extend>>\\n[Gutscheincode vorhanden]
 }
 
-Kunde --> UC1
+Kunde -- UC1
 `,
         explanation: `
           <strong>Extend:</strong> Wenn der Kunde einen Gutscheincode hat, wird „Rabatt anwenden"
@@ -601,21 +593,21 @@ Kunde --> UC1
         diagramCode: `
 left to right direction
 actor Kunde
-actor Zahlungssystem
+actor Zahlungssystem #d4edda
 
 rectangle "TechStore-System" {
   usecase "Produkt bestellen\\n--\\nextension points\\nRabatt prüfen" as UC1
   usecase "Anmelden" as UC2
   usecase "Rabatt anwenden" as UC3
-  usecase "Zahlung durchführen" as UC4
+  usecase "Zahlung durchführen" as UC4 #d4edda
 
   UC1 ..> UC2 : <<include>>
-  UC1 ..> UC4 : <<include>>
+  UC1 .[#2e7d32].> UC4 : <<include>>
   UC3 ..> UC1 : <<extend>>\\n[Gutscheincode vorhanden]
-  UC4 --> Zahlungssystem
+  UC4 -[#2e7d32]- Zahlungssystem
 }
 
-Kunde --> UC1
+Kunde -- UC1
 `,
         explanation: `
           Der <strong>sekundäre Akteur</strong> „Zahlungssystem" wird rechts platziert.
@@ -627,9 +619,9 @@ Kunde --> UC1
         label: 'Schritt 5: Weitere Use Cases und Vererbung',
         diagramCode: `
 left to right direction
-actor Benutzer
+actor Benutzer #d4edda
 actor Kunde
-actor Admin
+actor Admin #d4edda
 actor Zahlungssystem
 
 Kunde -up-|> Benutzer
@@ -640,18 +632,18 @@ rectangle "TechStore-System" {
   usecase "Anmelden" as UC2
   usecase "Rabatt anwenden" as UC3
   usecase "Zahlung durchführen" as UC4
-  usecase "Profil bearbeiten" as UC5
-  usecase "Bestellung stornieren" as UC6
+  usecase "Profil bearbeiten" as UC5 #d4edda
+  usecase "Bestellung stornieren" as UC6 #d4edda
 
   UC1 ..> UC2 : <<include>>
   UC1 ..> UC4 : <<include>>
   UC3 ..> UC1 : <<extend>>\\n[Gutscheincode vorhanden]
-  UC4 --> Zahlungssystem
+  UC4 -- Zahlungssystem
 }
 
-Benutzer --> UC5
-Kunde --> UC1
-Admin --> UC6
+Benutzer -[#2e7d32]- UC5
+Kunde -- UC1
+Admin -[#2e7d32]- UC6
 `,
         explanation: `
           <strong>Vererbung:</strong> „Kunde" und „Admin" erben von „Benutzer" und haben somit

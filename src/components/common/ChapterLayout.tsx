@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 
-type TabId = 'theorie' | 'beispiel' | 'uebungen'
+type TabId = 'theorie' | 'beispiel' | 'erkunden' | 'uebungen'
 
 interface Tab {
   id: TabId

@@ -48,15 +48,33 @@ export function DragDropZuordnung({ exercise, onNext }: ZuordnungProps) {
     if (!over) return
 
     const itemId = active.id as string
-    const zoneId = over.id as string
+    const overId = over.id as string
 
     // Check if the drop target is a valid zone
-    const isValidZone = exercise.zones.some((z) => z.id === zoneId)
-    if (!isValidZone) return
+    const isValidZone = exercise.zones.some((z) => z.id === overId)
+    if (isValidZone) {
+      setAssignments((prev) => ({ ...prev, [itemId]: overId }))
+      setUnassigned((prev) => prev.filter((id) => id !== itemId))
+      return
+    }
 
-    setAssignments((prev) => ({ ...prev, [itemId]: zoneId }))
-    setUnassigned((prev) => prev.filter((id) => id !== itemId))
-  }, [exercise.zones])
+    // If dropped on an item already in a zone, assign to that zone
+    const targetZone = assignments[overId]
+    if (targetZone) {
+      setAssignments((prev) => ({ ...prev, [itemId]: targetZone }))
+      setUnassigned((prev) => prev.filter((id) => id !== itemId))
+    }
+  }, [exercise.zones, assignments])
+
+  const handleUnassign = (itemId: string) => {
+    if (result) return
+    setAssignments((prev) => {
+      const next = { ...prev }
+      delete next[itemId]
+      return next
+    })
+    setUnassigned((prev) => [...prev, itemId])
+  }
 
   const handleSubmit = () => {
     submit(() => validateDragDropZuordnung(assignments, exercise.correctMapping, exercise.maxPoints))
@@ -102,18 +120,26 @@ export function DragDropZuordnung({ exercise, onNext }: ZuordnungProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {exercise.zones.map((zone) => (
             <DroppableZone key={zone.id} id={zone.id} label={zone.label}>
-              <SortableContext items={getItemsInZone(zone.id).map((i) => i.id)} strategy={verticalListSortingStrategy}>
-                {getItemsInZone(zone.id).map((item) => {
-                  const detail = result?.details?.find((d) => d.itemId === item.id)
-                  return (
-                    <SortableItem key={item.id} id={item.id} disabled={!!result}>
-                      <DragItemCard isCorrect={detail?.correct ?? null}>
-                        {item.content}
-                      </DragItemCard>
-                    </SortableItem>
-                  )
-                })}
-              </SortableContext>
+              {getItemsInZone(zone.id).map((item) => {
+                const detail = result?.details?.find((d) => d.itemId === item.id)
+                return (
+                  <div
+                    key={item.id}
+                    className={`group ${!result ? 'cursor-pointer' : ''}`}
+                    onClick={() => handleUnassign(item.id)}
+                    title={!result ? 'Klicken zum Entfernen' : undefined}
+                  >
+                    <DragItemCard isCorrect={detail?.correct ?? null}>
+                      {item.content}
+                      {!result && (
+                        <svg className="w-4 h-4 text-slate-300 group-hover:text-red-400 shrink-0 ml-auto transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                    </DragItemCard>
+                  </div>
+                )
+              })}
             </DroppableZone>
           ))}
         </div>
@@ -265,6 +291,21 @@ export function DragDropConnector({ exercise, onNext }: ConnectorProps) {
         <h3 className="text-xl font-bold text-text mb-2">{exercise.title}</h3>
         <p className="text-text-light">{exercise.description}</p>
       </div>
+
+      {/* SVG Diagram (if provided) */}
+      {exercise.svgContent && (
+        <div className="flex justify-center">
+          <div className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm overflow-x-auto">
+            <svg
+              viewBox="0 0 620 520"
+              className="w-full max-w-xl"
+              role="img"
+              aria-label={`Diagramm: ${exercise.title}`}
+              dangerouslySetInnerHTML={{ __html: exercise.svgContent }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Items to assign */}
       <div className="space-y-3">

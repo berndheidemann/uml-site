@@ -7,7 +7,7 @@ interface Props {
 }
 
 function TheorySectionItem({ section, depth = 0 }: { section: TheorySectionType; depth?: number }) {
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(depth > 0)
   const HeadingTag = depth === 0 ? 'h2' : depth === 1 ? 'h3' : 'h4'
   const headingSize = depth === 0 ? 'text-2xl' : depth === 1 ? 'text-xl' : 'text-lg'
 

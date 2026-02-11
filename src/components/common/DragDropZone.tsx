@@ -1,4 +1,5 @@
 import { useSortable } from '@dnd-kit/sortable'
+import { useDroppable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import type { ReactNode } from 'react'
 
@@ -36,13 +37,15 @@ interface DroppableZoneProps {
   id: string
   label: string
   children: ReactNode
-  isOver?: boolean
   className?: string
 }
 
-export function DroppableZone({ label, children, isOver, className }: DroppableZoneProps) {
+export function DroppableZone({ id, label, children, className }: DroppableZoneProps) {
+  const { isOver, setNodeRef } = useDroppable({ id })
+
   return (
     <div
+      ref={setNodeRef}
       className={`min-h-[90px] p-4 rounded-xl border-2 border-dashed transition-all ${
         isOver
           ? 'border-primary bg-primary/5 shadow-inner'
