@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ExerciseFeedback } from '../common/ExerciseFeedback.tsx'
 import { useExercise } from '../../hooks/useExercise.ts'
@@ -97,7 +97,6 @@ const parallelPairs: ParallelPair[] = [
 
 const SEQUENTIAL_TIME = 15 // sum of all durations: 4+3+2+3+3 = 15
 // Optimized: max(a1,a2,a3,a4)=4 (all parallel) + a5(3) = 7
-const OPTIMIZED_TIME = 7
 const ACTUAL_OPTIMIZED_TIME = 7
 
 // --- Component ---

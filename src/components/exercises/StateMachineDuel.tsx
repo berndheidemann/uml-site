@@ -113,7 +113,7 @@ function AutomatSVG({
   label,
   guardLabel,
   highlightState,
-  variant,
+  variant: _variant,
 }: {
   label: string
   guardLabel: string

@@ -318,7 +318,6 @@ export function FragmentAnimator() {
 
   // Derive labels for the current iteration
   const checkLabel = iterData ? `pruefeBestand("${iterData.name}", ${iterData.menge})` : ''
-  const resultLabel = iterData ? (iterData.success ? 'reserviert' : 'nichtVerfuegbar') : ''
 
   // Lifeline positions
   const bsX = px('bestellservice')

@@ -93,7 +93,7 @@ function OpenArrow({ x, y, direction, color }: { x: number; y: number; direction
 /*  Panel: Synchron                                                    */
 /* ------------------------------------------------------------------ */
 
-function SyncPanel({ phase, elapsed }: { phase: Phase; elapsed: number }) {
+function SyncPanel({ phase, elapsed: _elapsed }: { phase: Phase; elapsed: number }) {
   const showMsg1 = phase !== 'idle'
   const showMsg2 = phase === 'responding' || phase === 'done'
 
@@ -309,7 +309,7 @@ function SyncPanel({ phase, elapsed }: { phase: Phase; elapsed: number }) {
 /*  Panel: Asynchron                                                   */
 /* ------------------------------------------------------------------ */
 
-function AsyncPanel({ phase, elapsed }: { phase: Phase; elapsed: number }) {
+function AsyncPanel({ phase, elapsed: _elapsed }: { phase: Phase; elapsed: number }) {
   const showMsg1 = phase !== 'idle'
   const showMsg2 = phase === 'responding' || phase === 'done'
 

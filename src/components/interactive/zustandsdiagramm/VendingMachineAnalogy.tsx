@@ -411,7 +411,6 @@ function VendingMachineVisual({
               className="px-4 py-2.5 rounded-lg text-sm font-bold text-white shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800"
               style={{
                 backgroundColor: currentState === 'GeldEingeworfen' ? product.color : '#6b7280',
-                focusRingColor: product.color,
               }}
               aria-label={`${product.name} auswahlen (${formatEuro(product.price)})`}
             >

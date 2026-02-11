@@ -455,8 +455,6 @@ export function MessageFlowAnimator() {
             const offsetX = isSelf ? ACTIVATION_W / 2 + 2 : 0
 
             const top = msgY(range.startStep) - 8
-            const bottom = msgY(range.endStep) + 8
-            const height = bottom - top
 
             // Only show if we've reached the startStep
             if (currentStep < range.startStep) return null
